@@ -41,7 +41,8 @@
         <strong>Nomor WhatsApp:</strong> {{ $pesanan->nomor_whatsapp ?? '-' }}<br>
         <strong>Tanggal Pesan:</strong>
         {{ $pesanan->tanggal_pesan ? $pesanan->tanggal_pesan->format('d M Y') : '-' }}<br>
-        <strong>Status:</strong> {{ $pesanan->status }}
+        <strong>Status:</strong> {{ $pesanan->status }} <br>
+        <strong>Alamat:</strong> {{ $pesanan->alamat_pengiriman ?? '-' }}<br>
     </p>
 
     <h2>Item Dipesan:</h2>
