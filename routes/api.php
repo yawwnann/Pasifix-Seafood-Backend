@@ -54,8 +54,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user'])->name('api.user');
 
     // Endpoint untuk membuat pesanan baru
+    // Route::get('/pesanan', [PesananApiController::class, 'store'])->name('api.pesanan.store');
+    Route::get('/pesanan', [PesananApiController::class, 'index'])->name('api.pesanan.index');
+    Route::get('/pesanan/{pesanan}', [PesananApiController::class, 'show'])->name('api.pesanan.show');
     Route::post('/pesanan', [PesananApiController::class, 'store'])->name('api.pesanan.store');
-
+    Route::put('/pesanan/{pesanan}', [PesananApiController::class, 'update'])->name('api.pesanan.update'); // Atau PATCH
+    Route::delete('/pesanan/{pesanan}', [PesananApiController::class, 'destroy'])->name('api.pesanan.destroy');
     // === TAMBAHAN ROUTE UNTUK SUBMIT BUKTI PEMBAYARAN ===
     // Parameter {pesanan} akan di-resolve menjadi instance model Pesanan (Route Model Binding)
     Route::post('/pesanan/{pesanan}/submit-payment-proof', [PaymentProofController::class, 'submitProof'])
