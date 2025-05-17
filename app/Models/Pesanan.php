@@ -20,12 +20,11 @@ class Pesanan extends Model
         'nama_pelanggan',
         'nomor_whatsapp',
         'alamat_pengiriman',
-        // 'ikan_id', // Hapus ini
-        // 'ikan_dipesan', // Hapus ini juga
         'total_harga',
         'tanggal_pesan',
         'status',
         'catatan',
+        'payment_proof_path', // Tambahkan ini
     ];
 
     protected $casts = [

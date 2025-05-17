@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\IkanController;
 use App\Http\Controllers\Api\PesananApiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\KeranjangController;
+use App\Http\Controllers\Api\PaymentProofController; // <-- TAMBAHKAN IMPORT INI
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +56,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Endpoint untuk membuat pesanan baru
     Route::post('/pesanan', [PesananApiController::class, 'store'])->name('api.pesanan.store');
 
+    // === TAMBAHAN ROUTE UNTUK SUBMIT BUKTI PEMBAYARAN ===
+    // Parameter {pesanan} akan di-resolve menjadi instance model Pesanan (Route Model Binding)
+    Route::post('/pesanan/{pesanan}/submit-payment-proof', [PaymentProofController::class, 'submitProof'])
+        ->name('api.pesanan.submitProof');
+    // =====================================================
+
     //untuk mengelola pesanan:
     // Route::get('/pesanan', [PesananApiController::class, 'index'])->name('api.pesanan.index');
     // Route::get('/pesanan/{pesanan}', [PesananApiController::class, 'show'])->name('api.pesanan.show');
@@ -68,6 +75,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/keranjang/{keranjangItem}', [KeranjangController::class, 'update'])->name('keranjang.update');
     Route::delete('/keranjang/{keranjangItem}', [KeranjangController::class, 'destroy'])->name('keranjang.destroy');
 
+    // Endpoint untuk update foto profil pengguna
+    Route::post('/user/profile-photo', [UserProfileController::class, 'updateProfilePhoto'])->name('user.photo.update');
+    // Tambahkan route untuk menghapus foto jika perlu
+    // Route::delete('/user/profile-photo', [UserProfileController::class, 'deleteProfilePhoto'])->name('user.photo.delete');
 });
 
 // Route fallback jika endpoint API tidak ditemukan (opsional)
@@ -75,9 +86,8 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::fallback(function () {
     return response()->json(['message' => 'Endpoint tidak ditemukan.'], 404);
 });
-Route::middleware('auth:sanctum')->group(function () {
-    // ... (route API terotentikasi lainnya seperti /api/user)
-    Route::post('/user/profile-photo', [UserProfileController::class, 'updateProfilePhoto'])->name('user.photo.update');
-    // Tambahkan route untuk menghapus foto jika perlu
-    // Route::delete('/user/profile-photo', [UserProfileController::class, 'deleteProfilePhoto'])->name('user.photo.delete');
-});
+
+// Catatan: Anda memiliki dua blok Route::middleware('auth:sanctum')->group(...).
+// Biasanya, cukup satu grup utama untuk semua route terotentikasi API.
+// Namun, saya telah menambahkan route baru ke grup pertama yang lebih besar sesuai struktur Anda.
+// Jika /user/profile-photo juga merupakan bagian dari API utama, Anda bisa memindahkannya ke grup pertama.
