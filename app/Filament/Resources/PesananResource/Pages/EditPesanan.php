@@ -1,13 +1,15 @@
 <?php
-// File: app/Filament/Resources/PesananResource/Pages/EditPesanan.php
 
 namespace App\Filament\Resources\PesananResource\Pages;
 
 use App\Filament\Resources\PesananResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Database\Eloquent\Model; // Penting
-use Illuminate\Support\Facades\Log;   // Untuk Debug
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Filament\Notifications\Notification;
 
 class EditPesanan extends EditRecord
 {
@@ -21,40 +23,81 @@ class EditPesanan extends EditRecord
         ];
     }
 
-    // Ini method krusial untuk memastikan data items terisi di Repeater saat Edit
     protected function mutateFormDataBeforeFill(array $data): array
     {
         /** @var \App\Models\Pesanan $pesananRecord */
         $pesananRecord = $this->getRecord();
-        $pesananRecord->loadMissing('items'); // Pastikan relasi 'items' sudah dimuat
-
-        Log::info('[EditPesanan] Mutating form data before fill for Pesanan ID: ' . $pesananRecord->id);
+        $pesananRecord->loadMissing('items');
 
         $itemsDataFormatted = [];
         if ($pesananRecord->relationLoaded('items') && $pesananRecord->items->isNotEmpty()) {
-            foreach ($pesananRecord->items as $ikanItem) { // $ikanItem adalah instance model Ikan
-                $itemsDataFormatted[] = [
-                    'ikan_id' => $ikanItem->id,
-                    'jumlah' => $ikanItem->pivot->jumlah,
-                    'harga_saat_pesan' => $ikanItem->pivot->harga_saat_pesan,
-                ];
+            foreach ($pesananRecord->items as $ikanDalamPesanan) {
+                $pivotData = $ikanDalamPesanan->pivot;
+                if ($pivotData) {
+                    $itemsDataFormatted[] = [
+                        'ikan_id' => $ikanDalamPesanan->id,
+                        'jumlah' => $pivotData->jumlah,
+                        'harga_saat_pesan' => $pivotData->harga_saat_pesan,
+                    ];
+                }
             }
-            Log::info('[EditPesanan] Formatted items data: ', $itemsDataFormatted);
-        } else {
-            Log::info('[EditPesanan] No items found or relation not loaded for Pesanan ID: ' . $pesananRecord->id);
         }
-        $data['items'] = $itemsDataFormatted; // Umpankan data items yang sudah diformat ke form
+        $data['items'] = $itemsDataFormatted;
 
-        // Anda bisa juga mengisi ulang total_harga di sini jika perlu,
-        // meskipun Repeater dan updateTotalPrice seharusnya menanganinya saat form interaktif.
-        // $total = 0;
-        // foreach ($itemsDataFormatted as $item) { /* ... kalkulasi ... */ }
-        // $data['total_harga'] = $total;
+        $total = 0;
+        foreach ($itemsDataFormatted as $item) {
+            $jumlah = $item['jumlah'] ?? 0;
+            $harga = $item['harga_saat_pesan'] ?? 0;
+            if (is_numeric($jumlah) && is_numeric($harga)) {
+                $total += $jumlah * $harga;
+            }
+        }
+        $data['total_harga'] = $total;
 
-        Log::info('[EditPesanan] Final data to be filled: ', $data);
         return $data;
     }
 
-    // Method handleRecordUpdate Anda yang sudah ada
-    // protected function handleRecordUpdate(Model $record, array $data): Model { ... }
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        return DB::transaction(function () use ($record, $data) {
+            /** @var \App\Models\Pesanan $record */
+            $itemsDataFromForm = $data['items'] ?? [];
+            $pesananDataToUpdate = Arr::except($data, ['items']);
+
+            $calculatedTotal = 0;
+            $pivotDataForSync = [];
+            if (is_array($itemsDataFromForm)) {
+                foreach ($itemsDataFromForm as $item) {
+                    $ikanId = $item['ikan_id'] ?? null;
+                    $jumlah = $item['jumlah'] ?? 0;
+                    $harga = $item['harga_saat_pesan'] ?? 0;
+
+                    if ($ikanId && is_numeric($jumlah) && $jumlah > 0 && is_numeric($harga)) {
+                        $calculatedTotal += $jumlah * $harga;
+                        $pivotDataForSync[$ikanId] = [
+                            'jumlah' => $jumlah,
+                            'harga_saat_pesan' => $harga,
+                        ];
+                    }
+                }
+            }
+            $pesananDataToUpdate['total_harga'] = $calculatedTotal;
+
+            $record->fill($pesananDataToUpdate);
+            $record->save();
+
+            if (is_array($itemsDataFromForm)) {
+                $record->items()->sync($pivotDataForSync);
+            }
+
+            $record->refresh()->load('items');
+
+            Notification::make()
+                ->title('Pesanan berhasil diperbarui')
+                ->success()
+                ->send();
+
+            return $record;
+        });
+    }
 }

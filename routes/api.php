@@ -65,7 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pesanan/{pesanan}/submit-payment-proof', [PaymentProofController::class, 'submitProof'])
         ->name('api.pesanan.submitProof');
     // =====================================================
-
+    Route::put('/pesanan/{pesanan}/tandai-selesai', [PesananApiController::class, 'tandaiSelesai'])->name('api.pesanan.tandaiSelesai');
     //untuk mengelola pesanan:
     // Route::get('/pesanan', [PesananApiController::class, 'index'])->name('api.pesanan.index');
     // Route::get('/pesanan/{pesanan}', [PesananApiController::class, 'show'])->name('api.pesanan.show');

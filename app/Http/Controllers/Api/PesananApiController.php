@@ -156,4 +156,30 @@ class PesananApiController extends Controller
             ], 500);
         }
     }
+    public function tandaiSelesai(Request $request, Pesanan $pesanan): JsonResponse
+    {
+        // Otorisasi: Pastikan pesanan ini milik pengguna yang sedang login
+        if ($request->user()->id !== $pesanan->user_id) {
+            return response()->json(['message' => 'Akses ditolak.'], 403);
+        }
+
+        // Validasi: Hanya bisa ditandai selesai jika statusnya 'dikirim'
+        if ($pesanan->status !== 'dikirim') {
+            return response()->json(['message' => 'Pesanan ini tidak bisa ditandai selesai dari status saat ini.'], 422);
+        }
+
+        try {
+            $pesanan->status = 'selesai';
+            $pesanan->save();
+
+            // Muat ulang relasi jika diperlukan oleh resource
+            $pesanan->load(['user', 'items']);
+
+            return (new PesananResource($pesanan))->response()->setStatusCode(200);
+
+        } catch (\Exception $e) {
+            Log::error("Gagal menandai pesanan #{$pesanan->id} selesai: " . $e->getMessage());
+            return response()->json(['message' => 'Gagal memperbarui status pesanan.', 'error' => 'Terjadi kesalahan server.'], 500);
+        }
+    }
 }

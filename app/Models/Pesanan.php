@@ -33,9 +33,9 @@ class Pesanan extends Model
         'catatan',
         // Kolom baru untuk integrasi Midtrans
         'metode_pembayaran',
-        'status_pembayaran',   // (misal: 'pending', 'paid', 'failed', 'settlement')
-        'midtrans_order_id',   // ID Pesanan unik yang dikirim ke Midtrans
-        'midtrans_transaction_id', // ID Transaksi unik dari Midtrans
+        'status_pembayaran',
+        'catatan_admin',
+        'nomor_resi',  // (misal: 'pending', 'paid', 'failed', 'settlement')
     ];
 
     /**

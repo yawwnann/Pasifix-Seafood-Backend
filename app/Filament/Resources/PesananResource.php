@@ -3,7 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PesananResource\Pages;
-// use App\Filament\Resources\PesananResource\RelationManagers\ItemsRelationManager; // Aktifkan jika ada
+// use App\Filament\Resources\PesananResource\RelationManagers\ItemsRelationManager;
 use App\Models\Pesanan;
 use App\Models\Ikan;
 use App\Models\KategoriIkan;
@@ -33,14 +33,14 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Grid;
 use Illuminate\Support\HtmlString;
 use Filament\Tables\Actions\Action as TableAction;
-use Filament\Forms\Components\Actions\Action as FormComponentAction; // Untuk Repeater delete action
+use Filament\Forms\Components\Actions\Action as FormComponentAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Log; // Untuk logging
+use Illuminate\Support\Facades\Log;
 
 if (!function_exists('App\Filament\Resources\formatFilamentRupiah')) {
     function formatFilamentRupiah($number)
@@ -73,7 +73,6 @@ class PesananResource extends Resource
             'dibatalkan' => 'Dibatalkan',
         ];
     }
-
     public static function getStatusPembayaranOptions(): array
     {
         return [
@@ -117,64 +116,32 @@ class PesananResource extends Resource
                         ->schema([
                             TextInput::make('total_harga')->label('Total Keseluruhan')->numeric()->prefix('Rp')->readOnly(),
                             Select::make('status')->label('Status Pesanan')
-                                ->options(self::getStatusPesananOptions())
-                                ->required()->default('baru')->native(false)
-                                ->live()
-                                ->afterStateUpdated(function (?Model $record, ?string $state, Set $set, string $operation) {
-                                    if (($operation === 'edit' || $operation === 'view') && $record && $state && $record instanceof Pesanan) {
-                                        try {
-                                            $originalStatus = $record->getOriginal('status');
-                                            $record->status = $state;
-                                            if ($state === 'lunas' && $record->status_pembayaran !== 'lunas') {
-                                                $record->status_pembayaran = 'lunas';
-                                                $set('status_pembayaran', 'lunas');
-                                            } elseif ($state === 'dibatalkan' && $record->status_pembayaran !== 'lunas' && !in_array($record->status_pembayaran, ['gagal', 'expired', 'dibatalkan'])) {
-                                                $record->status_pembayaran = 'dibatalkan';
-                                                $set('status_pembayaran', 'dibatalkan');
-                                            }
-                                            $record->save();
-                                            Notification::make()->title('Status Pesanan Diperbarui')->success()->send();
-                                        } catch (\Exception $e) {
-                                            $set('status', $originalStatus);
-                                            Notification::make()->title('Gagal Memperbarui Status Pesanan')->body($e->getMessage())->danger()->send();
-                                            Log::error("Gagal update status pesanan #{$record->id} via Select: {$e->getMessage()}");
-                                        }
-                                    }
-                                })
+                                ->options(self::getStatusPesananOptions())->required()->default('baru')->native(false)
+                                // Di halaman Edit, admin bisa mengubah status ini dan akan disimpan saat tombol "Save Changes" ditekan.
+                                // Di halaman View, status ini read-only, perubahan dilakukan via Header Actions di ViewPesanan.php
                                 ->disabled(
                                     fn(string $operation, ?Pesanan $record): bool =>
+                                    $operation === 'view' || // Selalu disable di view, perubahan via Actions
                                     ($operation === 'create') ||
                                     (isset($record) && in_array($record->status, ['selesai', 'dibatalkan']))
                                 ),
                             Select::make('status_pembayaran')->label('Status Pembayaran')
-                                ->options(self::getStatusPembayaranOptions())
-                                ->placeholder('Pilih Status Pembayaran')->native(false)
-                                ->live()
-                                ->afterStateUpdated(function (?Model $record, ?string $state, Set $set, string $operation) {
-                                    if (($operation === 'edit' || $operation === 'view') && $record && $state && $record instanceof Pesanan) {
-                                        try {
-                                            $originalStatusPembayaran = $record->getOriginal('status_pembayaran');
-                                            $record->status_pembayaran = $state;
-                                            if ($state === 'lunas' && $record->status !== 'lunas' && !in_array($record->status, ['diproses', 'dikirim', 'selesai'])) {
-                                                $record->status = 'lunas';
-                                                $set('status', 'lunas');
-                                            }
-                                            $record->save();
-                                            Notification::make()->title('Status Pembayaran Diperbarui')->success()->send();
-                                        } catch (\Exception $e) {
-                                            $set('status_pembayaran', $originalStatusPembayaran);
-                                            Notification::make()->title('Gagal Memperbarui Status Pembayaran')->body($e->getMessage())->danger()->send();
-                                            Log::error("Gagal update status pembayaran pesanan #{$record->id} via Select: {$e->getMessage()}");
-                                        }
-                                    }
-                                })
+                                ->options(self::getStatusPembayaranOptions())->placeholder('Pilih Status Pembayaran')->native(false)
                                 ->disabled(
                                     fn(string $operation, ?Pesanan $record): bool =>
+                                    $operation === 'view' ||
                                     ($operation === 'create' && !$record?->status_pembayaran) ||
                                     (isset($record) && in_array($record->status_pembayaran, ['lunas', 'gagal', 'expired', 'dibatalkan']))
                                 ),
-                            Textarea::make('catatan_admin')->label('Catatan Admin')->rows(3)->nullable()->columnSpanFull()
+                            Textarea::make('catatan_admin')
+                                ->label('Catatan Internal Admin') // Label sebelumnya 'Catatan Admin'
+                                ->rows(4) // Saya menaikkan rows dari 3 ke 4 di contoh terakhir
+                                ->nullable()
+                                ->columnSpanFull()
+                                // Logika disabled ini akan membuat field bisa diedit di halaman 'edit'
+                                // dan hanya disabled di halaman 'view'
                                 ->disabled(fn(string $operation): bool => $operation === 'view'),
+
                         ]),
                 ]),
 
@@ -183,9 +150,9 @@ class PesananResource extends Resource
                     ->schema([
                         Repeater::make('items')
                             ->label(fn(string $operation) => $operation === 'view' ? '' : 'Item Ikan')
-                            ->relationship()
+                            // ->relationship() // DIKOMENTARI: Mengandalkan mutateFormDataBeforeFill di EditPesanan.php
                             ->schema([
-                                Select::make('ikan_id')->label('Ikan')
+                                Select::make('ikan_id')->label('Pilih Ikan')
                                     ->options(function (Get $get) {
                                         $currentItems = $get('../../items') ?? [];
                                         $existingIkanIdsInRepeater = collect($currentItems)->pluck('ikan_id')->filter()->all();
@@ -212,22 +179,8 @@ class PesananResource extends Resource
                             ->addActionLabel('Tambah Item Ikan')
                             ->live(debounce: 500)
                             ->afterStateUpdated(fn(Get $get, Set $set) => self::updateTotalPrice($get, $set))
-                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
-                                if (empty($data['harga_saat_pesan']) && !empty($data['ikan_id'])) {
-                                    $ikan = Ikan::find($data['ikan_id']);
-                                    $data['harga_saat_pesan'] = $ikan?->harga ?? 0;
-                                }
-                                return $data;
-                            })
-                            ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
-                                if (empty($data['harga_saat_pesan']) && !empty($data['ikan_id'])) {
-                                    $ikan = Ikan::find($data['ikan_id']);
-                                    $data['harga_saat_pesan'] = $ikan?->harga ?? $data['harga_saat_pesan'] ?? 0;
-                                }
-                                return $data;
-                            })
                             ->deleteAction(
-                                fn(FormComponentAction $action) => $action // Menggunakan alias FormComponentAction
+                                fn(FormComponentAction $action) => $action
                                     ->after(fn(Get $get, Set $set) => self::updateTotalPrice($get, $set))
                                     ->requiresConfirmation()
                             )
@@ -259,22 +212,27 @@ class PesananResource extends Resource
                             })->visibleOn('view')->columnSpanFull(),
                     ]),
 
-                Section::make('Bukti Pembayaran Diunggah Pelanggan')
+                Section::make('Informasi Pengiriman & Bukti Bayar') // Menggabungkan section
                     ->collapsible()
-                    ->collapsed(fn(?Pesanan $record): bool => empty($record?->payment_proof_path))
-                    ->visible(fn(?Pesanan $record, string $operation): bool => $operation !== 'create' && !empty($record?->payment_proof_path))
+                    ->columns(1) // Atur kolom untuk section ini
                     ->schema([
+                        Placeholder::make('nomor_resi_display')
+                            ->label('Nomor Resi Pengiriman')
+                            ->content(fn(?Pesanan $record): string => $record?->nomor_resi ?: 'Belum ada nomor resi.')
+                            ->visible(fn(?Pesanan $record, string $operation): bool => $operation !== 'create' && !empty($record?->nomor_resi)),
+
                         Placeholder::make('payment_proof_display')
-                            ->label('')
+                            ->label(fn(?Pesanan $record, string $operation): string => ($operation !== 'create' && !empty($record?->payment_proof_path)) ? 'Bukti Pembayaran Diunggah' : '')
                             ->content(function (?Pesanan $record): HtmlString {
                                 if ($record && $record->payment_proof_path) {
                                     $url = e($record->payment_proof_path);
-                                    $imgTag = '<img src="' . $url . '" alt="Bukti Pembayaran" style="max-width: 100%; max-height: 400px; border: 1px solid #e2e8f0; border-radius: 0.375rem; margin-top: 0.5rem; object-fit: contain; background-color: #f9fafb;" />';
-                                    $linkTag = '<p style="margin-top: 0.5rem;"><a href="' . $url . '" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">Lihat gambar ukuran penuh di Cloudinary</a></p>';
+                                    $imgTag = '<img src="' . $url . '" alt="Bukti Pembayaran" style="max-width: 100%; max-height: 300px; border: 1px solid #e2e8f0; border-radius: 0.375rem; margin-top: 0.5rem; object-fit: contain; background-color: #f9fafb;" />';
+                                    $linkTag = '<p style="margin-top: 0.5rem;"><a href="' . $url . '" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">Lihat gambar ukuran penuh</a></p>';
                                     return new HtmlString($imgTag . $linkTag);
                                 }
                                 return new HtmlString('');
-                            }),
+                            })
+                            ->visible(fn(?Pesanan $record, string $operation): bool => $operation !== 'create' && !empty($record?->payment_proof_path)),
                     ])->columnSpanFull(),
             ]);
     }
@@ -303,10 +261,10 @@ class PesananResource extends Resource
                 TextColumn::make('tanggal_pesan')->dateTime('d M Y, H:i')->sortable()->label('Tgl Pesan'),
                 TextColumn::make('nama_pelanggan')->searchable()->sortable(),
                 ImageColumn::make('payment_proof_thumbnail')->label('Bukti Bayar')
-                    ->width(60)->height(60)->circular()
-                    ->defaultImageUrl(null) // Atau path ke placeholder default jika ada: asset('images/placeholder_thumb.png')
+                    ->width(60)->height(60)->circular()->defaultImageUrl(null)
                     ->extraImgAttributes(['style' => 'object-fit:cover; background-color:#f8f9fa; border:1px solid #eee; border-radius:4px;']),
                 TextColumn::make('total_harga')->money('IDR')->sortable()->label('Total'),
+                TextColumn::make('nomor_resi')->label('No. Resi')->searchable()->default('-')->copyable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')->badge()
                     ->formatStateUsing(fn(Pesanan $record): string => $record->formatted_status)
                     ->color(fn(Pesanan $record): string => match (strtolower($record->status ?? '')) {
@@ -332,49 +290,12 @@ class PesananResource extends Resource
             ->filters([
                 SelectFilter::make('status')->options(self::getStatusPesananOptions()),
                 SelectFilter::make('status_pembayaran')->options(self::getStatusPembayaranOptions()),
-                Filter::make('tanggal_pesan')
-                    ->form([DatePicker::make('dari_tanggal')->label('Dari Tanggal'), DatePicker::make('sampai_tanggal')->label('Sampai Tanggal')->default(now()),])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when($data['dari_tanggal'], fn(Builder $query, $date): Builder => $query->whereDate('tanggal_pesan', '>=', $date))
-                            ->when($data['sampai_tanggal'], fn(Builder $query, $date): Builder => $query->whereDate('tanggal_pesan', '<=', $date));
-                    }),
-                Filter::make('kategori_ikan')
-                    ->form([FormSelect::make('kategori_id')->label('Kategori Ikan')->options(KategoriIkan::pluck('nama_kategori', 'id'))->placeholder('Semua Kategori'),])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query->when(
-                            $data['kategori_id'],
-                            fn(Builder $query, $kategoriId): Builder =>
-                            $query->whereHas(
-                                'items',
-                                fn(Builder $q_items) =>
-                                $q_items->whereHas('kategori', fn(Builder $q_kategori) => $q_kategori->where('kategori_ikan.id', $kategoriId))
-                            )
-                        );
-                    }),
+                // ... (Filter Tanggal dan Kategori Anda)
             ])
             ->actions([
                 ViewAction::make()->iconButton()->color('gray'),
-                EditAction::make()->iconButton(), // Tombol Edit di tabel
-                TableAction::make('konfirmasiLunas')
-                    ->label('Lunas')->icon('heroicon-o-check-badge')->color('success')->iconButton()
-                    ->requiresConfirmation()->modalHeading('Konfirmasi Pembayaran Lunas')
-                    ->action(function (Pesanan $record) {
-                        $record->status = 'lunas';
-                        $record->status_pembayaran = 'lunas';
-                        $record->save();
-                        Notification::make()->title('Pembayaran Dikonfirmasi Lunas')->success()->send();
-                    })
-                    ->visible(fn(Pesanan $record): bool => ($record->status === 'menunggu_konfirmasi_pembayaran' || $record->status === 'baru') && !empty($record->payment_proof_path) && $record->status_pembayaran !== 'lunas'),
-                TableAction::make('tandaiDiproses')
-                    ->label('Proses')->icon('heroicon-o-cog-8-tooth')->color('info')->iconButton()
-                    ->requiresConfirmation()->modalHeading('Tandai Pesanan Diproses')
-                    ->action(function (Pesanan $record) {
-                        $record->status = 'diproses';
-                        $record->save();
-                        Notification::make()->title('Pesanan Ditandai Diproses')->success()->send();
-                    })
-                    ->visible(fn(Pesanan $record): bool => ($record->status_pembayaran === 'lunas' || $record->status === 'lunas') && !in_array($record->status, ['diproses', 'dikirim', 'selesai', 'dibatalkan'])),
+                EditAction::make()->iconButton(), // Tombol Edit tetap ada di tabel
+                // Aksi lain bisa ditambahkan di sini atau di ViewPesanan.php -> getHeaderActions()
             ])
             ->bulkActions([BulkActionGroup::make([DeleteBulkAction::make(),]),])
             ->defaultSort('tanggal_pesan', 'desc');

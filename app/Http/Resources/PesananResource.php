@@ -29,6 +29,7 @@ class PesananResource extends JsonResource
             'tanggal_pesan' => $this->tanggal_pesan ? $this->tanggal_pesan->format('Y-m-d H:i:s') : ($this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null),
             'status' => $this->status,
             'catatan' => $this->catatan,
+            'nomor_resi' => $this->nomor_resi,
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
 
