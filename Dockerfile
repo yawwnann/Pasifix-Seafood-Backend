@@ -23,6 +23,9 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platfo
 # Copy application files
 COPY . .
 
+# Configure Apache to use Laravel public directory
+RUN echo '<VirtualHost *:80>\n	documentroot /var/www/html/public\n	<directory /var/www/html/public>\n		allowoverride all\n		require all granted\n	</directory>\n	errorlog ${APACHE_LOG_DIR}/error.log\n	customlog ${APACHE_LOG_DIR}/access.log combined\n</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
 # Create storage directories and set permissions
 RUN mkdir -p /var/www/html/storage/framework/cache \
     && mkdir -p /var/www/html/storage/framework/sessions \
