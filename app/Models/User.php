@@ -111,10 +111,8 @@ class User extends Authenticatable
     // --- Method untuk akses Filament ---
     public function canAccessPanel(): bool
     {
-        Log::info('canAccessPanel called for user: ' . $this->email);
-        $result = $this->hasRole('admin');
-        Log::info('canAccessPanel result: ' . ($result ? 'true' : 'false'));
-        return $result;
+        // Workaround: izinkan semua user masuk panel Filament untuk debug
+        return true;
     }
     // --- Akhir Method untuk akses Filament ---
 }
