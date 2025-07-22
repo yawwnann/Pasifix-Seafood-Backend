@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log; // <-- TAMBAHAN untuk Log::error / Log::warning
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // <-- TAMBAHAN untuk Cloudinary::secureUrl
+use Filament\Panel;
 
 class User extends Authenticatable
 {
@@ -109,7 +110,7 @@ class User extends Authenticatable
     // --- Akhir Method hasRole ---
 
     // --- Method untuk akses Filament ---
-    public function canAccessPanel(): bool
+    public function canAccessPanel(Panel $panel): bool
     {
         // Workaround: izinkan semua user masuk panel Filament untuk debug
         return true;
