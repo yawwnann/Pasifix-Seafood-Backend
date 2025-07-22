@@ -1,7 +1,4 @@
-FROM php:8.2-fpm
-
-# Set working directory
-WORKDIR /var/www
+FROM php:8.3-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,54 +7,69 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libzip-dev \
     zip \
     unzip \
-    nodejs \
-    npm \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    libicu-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
-
-# Get latest Composer
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
+
+# Configure PHP memory limits
+RUN echo "memory_limit = 1G" >> /usr/local/etc/php/conf.d/memory-limit.ini
+RUN echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/memory-limit.ini
+RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/memory-limit.ini
+RUN echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/memory-limit.ini
+
+# Set working directory
+WORKDIR /var/www/html
 
 # Copy composer files first for better caching
 COPY composer.json composer.lock ./
-COPY .env.example .env
 
-# Install PHP dependencies with error handling
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Install PHP dependencies with platform ignore for development
+RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Copy the rest of the application
-COPY . /var/www
-
-# Copy existing application directory permissions
-RUN chmod -R 775 storage bootstrap/cache
-
-# Install Node.js dependencies (only if package.json exists)
-# The original code had this block, but it was removed by the new_code.
-# If the user wants to keep it, it should be re-added.
-# For now, I'm removing it as it's not in the new_code.
-
-# Build assets (only if vite.config.js exists)
-# The original code had this block, but it was removed by the new_code.
-# If the user wants to keep it, it should be re-added.
-# For now, I'm removing it as it's not in the new_code.
+# Copy application files
+COPY . .
 
 # Create storage directories and set permissions
-# The original code had this block, but it was removed by the new_code.
-# If the user wants to keep it, it should be re-added.
-# For now, I'm removing it as it's not in the new_code.
+RUN mkdir -p /var/www/html/storage/framework/cache \
+    && mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/logs \
+    && mkdir -p /var/www/html/bootstrap/cache
 
-# Change ownership of our applications
-# The original code had this block, but it was removed by the new_code.
-# If the user wants to keep it, it should be re-added.
-# For now, I'm removing it as it's not in the new_code.
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Expose port 9000
-EXPOSE 9000
+# Configure Apache
+RUN echo '<VirtualHost *:80>\n\
+    DocumentRoot /var/www/html/public\n\
+    <Directory /var/www/html/public>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+    </Directory>\n\
+    ErrorLog ${APACHE_LOG_DIR}/error.log\n\
+    CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
-# Start Laravel development server on port 9000
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=9000"] 
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Laravel cache commands
+RUN php artisan config:clear \
+    && php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
+
+# Expose port 80
+EXPOSE 8080
+
+# Run migrations and start Apache
+CMD bash -c "php artisan migrate --force && apache2-foreground"
