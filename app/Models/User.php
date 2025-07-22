@@ -15,8 +15,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log; // <-- TAMBAHAN untuk Log::error / Log::warning
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // <-- TAMBAHAN untuk Cloudinary::secureUrl
 use Filament\Panel;
+use Filament\Models\Contracts\FilamentUser;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -112,7 +113,6 @@ class User extends Authenticatable
     // --- Method untuk akses Filament ---
     public function canAccessPanel(Panel $panel): bool
     {
-        // Workaround: izinkan semua user masuk panel Filament untuk debug
         return true;
     }
     // --- Akhir Method untuk akses Filament ---
