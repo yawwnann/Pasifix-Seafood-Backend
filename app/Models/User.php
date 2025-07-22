@@ -113,7 +113,8 @@ class User extends Authenticatable implements FilamentUser
     // --- Method untuk akses Filament ---
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        // Contoh: hanya izinkan user dengan email @yourdomain.com dan sudah verifikasi email
+        return str_ends_with($this->email, '@gmail.com') && $this->hasVerifiedEmail();
     }
     // --- Akhir Method untuk akses Filament ---
 }
