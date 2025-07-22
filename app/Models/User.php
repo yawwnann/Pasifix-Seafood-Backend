@@ -108,4 +108,10 @@ class User extends Authenticatable
     }
     // --- Akhir Method hasRole ---
 
+    // --- Method untuk akses Filament ---
+    public function canAccessPanel(): bool
+    {
+        return $this->hasRole('admin');
+    }
+    // --- Akhir Method untuk akses Filament ---
 }
