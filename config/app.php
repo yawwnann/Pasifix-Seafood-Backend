@@ -140,6 +140,7 @@ return [
         // App\Providers\FortifyServiceProvider::class,     // Jika pakai Fortify/Jetstream
         // App\Providers\JetstreamServiceProvider::class,   // Jika pakai Jetstream
         App\Providers\Filament\AdminPanelProvider::class, // <-- Provider Panel Filament Anda
+        App\Providers\LivewireOverrideServiceProvider::class, // <-- Provider untuk override route livewire
 
     ])->toArray(),
 
