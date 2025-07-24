@@ -24,13 +24,16 @@ class StorePesananApiRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'nama_pelanggan' => ['required', 'string', 'max:255'],
             'nomor_whatsapp' => ['nullable', 'string', 'max:20'],
-            'alamat_pengiriman' => ['nullable', 'string'],
+            'alamat_pengiriman' => ['required', 'string'],
             'catatan' => ['nullable', 'string'],
+            'total_harga' => ['required', 'numeric', 'min:0'],
             'items' => ['required', 'array', 'min:1'], // Wajib ada item, minimal 1
             'items.*.ikan_id' => ['required', 'integer', 'exists:ikan,id'], // Setiap item harus punya ikan_id yg valid di tabel ikan
             'items.*.jumlah' => ['required', 'integer', 'min:1'], // Setiap item harus punya jumlah minimal 1
+            'items.*.harga_saat_pesan' => ['required', 'numeric', 'min:0'], // Harga saat pesan
         ];
     }
 
