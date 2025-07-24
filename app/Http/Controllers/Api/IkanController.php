@@ -16,26 +16,23 @@ class IkanController extends Controller
     {
         $request->validate([
             'q' => 'nullable|string|max:100',
-            'sort' => 'nullable|string|in:harga,created_at,nama_ikan',
-            'order' => 'nullable|string|in:asc,desc',
+            'sort_by' => 'nullable|string|in:harga,created_at,nama_ikan',
+            'sort_direction' => 'nullable|string|in:asc,desc',
             'status_ketersediaan' => 'nullable|string|in:tersedia,habis',
             'kategori_slug' => 'nullable|string|exists:kategori_ikan,slug'
         ]);
 
         $searchQuery = $request->query('q');
-        $sortBy = $request->query('sort', 'created_at');
-        $sortOrder = $request->query('order', 'desc');
+        $sortBy = $request->query('sort_by', 'created_at');
+        $sortDirection = $request->query('sort_direction', 'desc');
         $statusKetersediaan = $request->query('status_ketersediaan');
         $kategoriSlug = $request->query('kategori_slug');
 
         $ikanQuery = Ikan::with('kategori');
 
+        // Filter berdasarkan status ketersediaan
         if ($statusKetersediaan) {
-            if (strtolower($statusKetersediaan) === 'tersedia') {
-                $ikanQuery->where('stok', '>', 0);
-            } elseif (strtolower($statusKetersediaan) === 'habis') {
-                $ikanQuery->where('stok', '<=', 0);
-            }
+            $ikanQuery->where('status_ketersediaan', 'LIKE', "%{$statusKetersediaan}%");
         }
 
         if ($kategoriSlug) {
@@ -47,16 +44,21 @@ class IkanController extends Controller
         if ($searchQuery) {
             $ikanQuery->where(function (Builder $query) use ($searchQuery) {
                 $query->where('nama_ikan', 'LIKE', "%{$searchQuery}%")
-                    ->orWhere('deskripsi', 'LIKE', "%{$searchQuery}%");
+                    ->orWhere('deskripsi', 'LIKE', "%{$searchQuery}%")
+                    ->orWhereHas('kategori', function (Builder $subQuery) use ($searchQuery) {
+                        $subQuery->where('nama_kategori', 'LIKE', "%{$searchQuery}%");
+                    });
             });
         }
 
+        // Sorting
         $allowedSorts = ['harga', 'created_at', 'nama_ikan'];
         $sortField = in_array($sortBy, $allowedSorts) ? $sortBy : 'created_at';
-        $sortDirection = strtolower($sortOrder) === 'asc' ? 'asc' : 'desc';
+        $sortDir = strtolower($sortDirection) === 'asc' ? 'asc' : 'desc';
 
-        $ikanQuery->orderBy($sortField, $sortDirection);
+        $ikanQuery->orderBy($sortField, $sortDir);
 
+        // Secondary sort untuk konsistensi
         if ($sortField !== 'nama_ikan') {
             $ikanQuery->orderBy('nama_ikan', 'asc');
         }
