@@ -74,8 +74,6 @@ class IkanResource extends Resource
                 FileUpload::make('gambar_utama')
                     ->label('Gambar Utama')
                     ->image()
-                    ->disk('cloudinary')
-                    ->directory('ikan-images')
                     ->nullable()
                     ->columnSpanFull(),
             ]);
