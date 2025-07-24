@@ -124,6 +124,10 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'aliases' => [
+        'Cloudinary' => CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::class,
+    ],
+
     'providers' => ServiceProvider::defaultProviders()->merge([
         /*
          * Package Service Providers...
@@ -141,6 +145,7 @@ return [
         // App\Providers\JetstreamServiceProvider::class,   // Jika pakai Jetstream
         App\Providers\Filament\AdminPanelProvider::class, // <-- Provider Panel Filament Anda
         App\Providers\LivewireOverrideServiceProvider::class, // <-- Provider untuk override route livewire
+        CloudinaryLabs\CloudinaryLaravel\CloudinaryServiceProvider::class,
 
     ])->toArray(),
 

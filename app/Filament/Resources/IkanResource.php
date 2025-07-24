@@ -72,8 +72,11 @@ class IkanResource extends Resource
                     ->required()
                     ->default('Tersedia'),
                 FileUpload::make('gambar_utama')
-                    ->label('Gambar Utama')
+                    ->label('Gambar Utama (Max 1MB)')
                     ->image()
+                    ->disk('cloudinary')
+                    ->directory('ikan_images')
+                    ->visibility('public')
                     ->nullable()
                     ->columnSpanFull(),
             ]);

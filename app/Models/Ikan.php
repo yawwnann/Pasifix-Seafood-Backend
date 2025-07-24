@@ -32,6 +32,7 @@ class Ikan extends Model
     protected $casts = [
         'harga' => 'integer', // Pastikan harga disimpan sebagai integer (misal: dalam sen/rupiah tanpa desimal)
         'stok' => 'integer',
+        'gambar_utama' => 'string',
     ];
 
     /**
