@@ -36,6 +36,7 @@ class PaymentProofController extends Controller
         if ($request->hasFile('payment_proof')) {
             $file = $request->file('payment_proof');
             $originalFileName = $file->getClientOriginalName();
+            $cleanFileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', pathinfo($originalFileName, PATHINFO_FILENAME));
             $uploadedFileUrl = null;
 
             // 2. Unggah Gambar ke Cloudinary
@@ -45,7 +46,7 @@ class PaymentProofController extends Controller
                 $cloudinary = new Cloudinary(); // Menggunakan konfigurasi global dari .env
                 $uploadResult = $cloudinary->uploadApi()->upload($file->getRealPath(), [
                     'folder' => 'payment_proofs_pesanan',
-                    'public_id' => 'pesanan_' . ($pesanan->id ?? 'temp') . '_' . time() . '_' . pathinfo($originalFileName, PATHINFO_FILENAME),
+                    'public_id' => 'pesanan_' . ($pesanan->id ?? 'temp') . '_' . time() . '_' . $cleanFileName,
                     'resource_type' => 'image'
                 ]);
                 $uploadedFileUrl = $uploadResult['secure_url'];
