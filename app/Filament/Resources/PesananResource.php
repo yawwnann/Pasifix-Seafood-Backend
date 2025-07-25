@@ -258,7 +258,7 @@ class PesananResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id')->label('ID')->sortable()->searchable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('tanggal_pesan')->dateTime('d M Y, H:i')->sortable()->label('Tgl Pesan'),
+                TextColumn::make('tanggal_pesan')->dateTime('d M Y')->sortable()->label('Tgl Pesan'),
                 TextColumn::make('nama_pelanggan')->searchable()->sortable(),
                 TextColumn::make('total_harga')->money('IDR')->sortable()->label('Total'),
                 TextColumn::make('nomor_resi')->label('No. Resi')->searchable()->default('-')->copyable()->toggleable(isToggledHiddenByDefault: true),
