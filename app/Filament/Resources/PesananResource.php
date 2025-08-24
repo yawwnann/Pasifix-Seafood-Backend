@@ -117,11 +117,11 @@ class PesananResource extends Resource
                             TextInput::make('total_harga')->label('Total Keseluruhan')->numeric()->prefix('Rp')->readOnly(),
                             Select::make('status')->label('Status Pesanan')
                                 ->options(self::getStatusPesananOptions())->required()->default('baru')->native(false)
-                                // Di halaman Edit, admin bisa mengubah status ini dan akan disimpan saat tombol "Save Changes" ditekan.
-                                // Di halaman View, status ini read-only, perubahan dilakukan via Header Actions di ViewPesanan.php
+                                // Di halaman Edit, admin bisa mengubah status ini
+                                // Di halaman View, status ini read-only untuk melihat detail saja
                                 ->disabled(
                                     fn(string $operation, ?Pesanan $record): bool =>
-                                    $operation === 'view' || // Selalu disable di view, perubahan via Actions
+                                    $operation === 'view' || // Selalu disable di view
                                     ($operation === 'create') ||
                                     (isset($record) && in_array($record->status, ['selesai', 'dibatalkan']))
                                 ),
@@ -129,7 +129,7 @@ class PesananResource extends Resource
                                 ->options(self::getStatusPembayaranOptions())->placeholder('Pilih Status Pembayaran')->native(false)
                                 ->disabled(
                                     fn(string $operation, ?Pesanan $record): bool =>
-                                    $operation === 'view' ||
+                                    $operation === 'view' || // Selalu disable di view
                                     ($operation === 'create' && !$record?->status_pembayaran) ||
                                     (isset($record) && in_array($record->status_pembayaran, ['lunas', 'gagal', 'expired', 'dibatalkan']))
                                 ),
@@ -212,14 +212,23 @@ class PesananResource extends Resource
                             })->visibleOn('view')->columnSpanFull(),
                     ]),
 
-                Section::make('Informasi Pengiriman & Bukti Bayar') // Menggabungkan section
+                Section::make('Informasi Pengiriman & Bukti Bayar')
                     ->collapsible()
-                    ->columns(1) // Atur kolom untuk section ini
+                    ->columns(1)
                     ->schema([
+                        // Nomor Resi - hanya tampil di view, di edit akan ada input field
                         Placeholder::make('nomor_resi_display')
                             ->label('Nomor Resi Pengiriman')
                             ->content(fn(?Pesanan $record): string => $record?->nomor_resi ?: 'Belum ada nomor resi.')
-                            ->visible(fn(?Pesanan $record, string $operation): bool => $operation !== 'create' && !empty($record?->nomor_resi)),
+                            ->visible(fn(?Pesanan $record, string $operation): bool => $operation === 'view' && !empty($record?->nomor_resi)),
+
+                        // Input field untuk nomor resi - hanya tampil di edit
+                        TextInput::make('nomor_resi')
+                            ->label('Nomor Resi Pengiriman')
+                            ->maxLength(255)
+                            ->nullable()
+                            ->helperText('Masukkan nomor resi pengiriman jika pesanan sudah dikirim')
+                            ->visible(fn(string $operation): bool => $operation === 'edit'),
 
                         Placeholder::make('payment_proof_display')
                             ->label(fn(?Pesanan $record, string $operation): string => ($operation !== 'create' && !empty($record?->payment_proof_path)) ? 'Bukti Pembayaran Diunggah' : '')
