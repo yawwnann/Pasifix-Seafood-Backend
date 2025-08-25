@@ -38,15 +38,15 @@ class PesananStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->color('success'),
 
-            Stat::make('Pesanan Baru', $statusCounts['baru'] ?? 0)
-                ->description('Pesanan belum diproses')
-                ->descriptionIcon('heroicon-m-sparkles')
-                ->color('warning'),
-
-            // Stat::make('Menunggu Konfirmasi', $statusCounts['menunggu_konfirmasi_pembayaran'] ?? 0)
-            //     ->description('Menunggu konfirmasi pembayaran')
-            //     ->descriptionIcon('heroicon-m-clock')
+            // Stat::make('Pesanan Baru', $statusCounts['baru'] ?? 0)
+            //     ->description('Pesanan belum diproses')
+            //     ->descriptionIcon('heroicon-m-sparkles')
             //     ->color('warning'),
+
+            Stat::make('Menunggu Konfirmasi', $statusCounts['menunggu_konfirmasi_pembayaran'] ?? 0)
+                ->description('Menunggu konfirmasi pembayaran')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color('warning'),
 
             // Stat::make('Lunas', $statusCounts['lunas'] ?? 0)
             //     ->description('Pembayaran dikonfirmasi')
