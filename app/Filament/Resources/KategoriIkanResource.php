@@ -18,7 +18,7 @@ class KategoriIkanResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $modelLabel = 'Kategori Ikan';
-    protected static ?string $pluralModelLabel = 'Kategori Ikan';
+    protected static ?string $pluralModelLabel = 'Kategori Seafood';
     protected static ?string $navigationGroup = 'Manajemen Katalog';
 
     public static function form(Form $form): Form

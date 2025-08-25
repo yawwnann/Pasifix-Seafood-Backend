@@ -29,7 +29,7 @@ class IkanResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
     protected static ?string $modelLabel = 'Ikan';
-    protected static ?string $pluralModelLabel = 'Daftar Ikan';
+    protected static ?string $pluralModelLabel = 'Daftar Seafood';
     protected static ?string $navigationGroup = 'Manajemen Katalog';
 
     public static function form(Form $form): Form
